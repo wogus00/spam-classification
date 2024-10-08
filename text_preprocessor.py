@@ -4,6 +4,7 @@ import re
 import argparse
 import os
 
+import nbformat as nbf
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from gensim.models import Word2Vec, Doc2Vec
@@ -172,10 +173,11 @@ def main_train(technique, dir_name):
 ###########-------TRAIN-----#############
     print(f"Transformed data shape: {np.array(X_transformed_train).shape}")
     output_path = os.path.join(dir_name, f'train.pkl')
+    output_path_csv = os.path.join(dir_name, f'train.csv')
     final_df_train = pd.DataFrame(X_transformed_train)
     final_df_train['CLASS'] = y_train
     final_df_train.set_index(comment_id_train, inplace=True)
-    # final_df_train.to_csv('train.csv', index=True) 
+    final_df_train.to_csv(output_path_csv, index=True) 
     print(f"Exporting data to {output_path}...\n")
     with open(output_path, 'wb') as file:
         pickle.dump(final_df_train, file)
@@ -184,14 +186,44 @@ def main_train(technique, dir_name):
 ###########-------TEST--------#############
     print(f"Transformed data shape: {np.array(X_transformed_test).shape}")
     output_path = os.path.join(dir_name, f'test.pkl')
+    output_path_csv = os.path.join(dir_name, f'test.csv')
     final_df_test = pd.DataFrame(X_transformed_test)
     final_df_test.set_index(comment_id_test, inplace=True)
-    # final_df_test.to_csv('test.csv', index=True) 
+    final_df_test.to_csv(output_path_csv, index=True) 
     print(f"Exporting data to {output_path}...\n")
     with open(output_path, 'wb') as file:
         pickle.dump(final_df_test, file)
     print(f"Data successfully exported to {output_path}.")
 
+
+def create_notebook(dir_name):
+    # Create a new notebook
+    nb = nbf.v4.new_notebook()
+
+    # Define the single code cell
+    code = """
+import pickle
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import cross_val_score
+import pandas as pd
+
+with open('test.pkl', 'rb') as file:
+    test_df = pickle.load(file)
+with open('train.pkl', 'rb') as file:
+    train_df = pickle.load(file)
+    """
+
+    # Add the cell to the notebook
+    nb['cells'] = [nbf.v4.new_code_cell(code)]
+
+    # Write the notebook to a file
+    output_path = os.path.join(dir_name, f'modelling.ipynb')
+    with open(output_path, 'w') as f:
+        nbf.write(nb, f)
+
+    print("Jupyter notebook 'modelling.ipynb' created successfully.")
 
 
 
@@ -217,3 +249,4 @@ if __name__ == "__main__":
         os.makedirs(dir_name)
 
     main_train(args.technique, dir_name)
+    create_notebook(dir_name)
