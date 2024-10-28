@@ -11,6 +11,8 @@ from nltk.stem import WordNetLemmatizer
 from nltk.data import find
 
 from transformers import BertTokenizer, BertModel
+from transformers import T5Tokenizer, T5Model
+
 import torch
 
 # if you happen to have a CUDA supported GPU HAHAHA
@@ -91,6 +93,44 @@ def main_tfidf():
 
     print(f"Exporting data to {dir_name}...\n")
 
+def get_t5_embedding(sentence):
+    t5_tokenizer = T5Tokenizer.from_pretrained("google-t5/t5-base")
+    t5_model = T5Model.from_pretrained("google-t5/t5-base")
+
+    inputs = t5_tokenizer(sentence, return_tensors="pt")
+
+    with torch.no_grad():  
+        encoder_outputs = t5_model.encoder(**inputs)
+
+    embeddings = encoder_outputs.last_hidden_state[:, 0, :]
+
+    return embeddings.numpy()
+
+def main_t5():
+    """
+    """
+    # Import raw dataset
+    df_train = pd.read_csv('raw-dataset/train.csv')
+    df_test = pd.read_csv('raw-dataset/test.csv')
+
+    df_train['t5_embeddings'] = [get_t5_embedding(sentence) for sentence in tqdm(df_train['CONTENT'], desc="Extracting T5 embeddings")]
+    df_test['t5_embeddings'] = [get_t5_embedding(sentence) for sentence in tqdm(df_test['CONTENT'], desc="Extracting T5 embeddings (Test)")]
+
+    # Create a folder
+    dir_name = 't5_embedding_extracted_dataset'
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+    
+    output_path_test = os.path.join(dir_name, f'test.csv')
+    output_path_train = os.path.join(dir_name, f'train.csv')
+    
+    df_test.to_csv(output_path_test) 
+    df_train.to_csv(output_path_train) 
+
+    print(f"Exporting data to {dir_name}...\n")
+
+
+
 def get_bert_embedding(sentence):
     
     bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', clean_up_tokenization_spaces=True)
@@ -133,6 +173,13 @@ def main_bert():
 
     print(f"Exporting data to {dir_name}...\n")
 
+def main_word2vec(unique_id):
+    # Import raw dataset
+    df_train = pd.read_csv('raw-dataset/train.csv')
+    df_test = pd.read_csv('raw-dataset/test.csv')
+
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -148,8 +195,8 @@ if __name__ == "__main__":
         main_tfidf()
     elif args.technique == "bert":
         main_bert()
-    # elif args.technique == "word2vec":
-    #     main_word2vec(args.id)
+    elif args.technique == "t5":
+        main_t5()
     
 
 
