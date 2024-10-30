@@ -1,0 +1,260 @@
+---
+title: "Word Comparison"
+author: "Domenico Oppedisano"
+date: "2024-10-30"
+output: html_document
+---
+
+```{python}
+"""
+!pip install pandas
+!pip install nltk
+!pip install pyspellchecker
+!pip install matplotlib
+!pip install matplotlib-venn
+"""
+```
+
+
+```{python}
+import pandas as pd
+import nltk
+import string
+from nltk.corpus import stopwords
+from spellchecker import SpellChecker
+
+
+
+# Ensure necessary NLTK resources are downloaded
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')  # For part-of-speech tagging
+nltk.download('averaged_perceptron_tagger_eng')
+
+# Load CSV
+cm = pd.read_csv('train.csv')  # Adjusting to your file name
+
+# Initialize spellchecker
+spell = SpellChecker()
+
+# Function to clean text by removing stop words and punctuation
+def clean_text(text):
+    # Remove '\ufeff' if present
+    text = text.replace('\ufeff', '')
+
+    # Remove punctuation from the text
+    text = text.translate(str.maketrans('', '', string.punctuation))
+
+    # Tokenize and filter out stopwords
+    words = text.split()
+    stop_words = set(stopwords.words('english'))
+    cleaned_words = [word for word in words if word.lower() not in stop_words]
+    
+    return ' '.join(cleaned_words)
+
+# Function to identify typos, ignoring proper nouns and numbers
+def find_typos(text):
+    # Tokenize text and tag with parts of speech
+    words = nltk.word_tokenize(text)
+    pos_tags = nltk.pos_tag(words)
+
+    # Only check words that aren't proper nouns (NNP or NNPS) or numbers
+    typos = [word for word, pos in pos_tags 
+             if word.lower() not in spell 
+             and pos not in ('NNP', 'NNPS') 
+             and not word.isdigit()]
+
+    # Join typos list if any, else return empty string
+    return ', '.join(typos) if typos else ''
+
+
+# Apply the cleaning and typo detection functions
+cm['cleaned_text'] = cm['CONTENT'].apply(clean_text)
+cm['typos'] = cm['cleaned_text'].apply(find_typos)
+
+# Display the first few rows to check results
+cm[['CONTENT', 'cleaned_text', 'typos']].head()
+
+```
+
+```{python}
+import re
+
+# Function to extract emojis from text
+def find_emojis(text):
+    # Regular expression pattern to match emojis
+    emoji_pattern = re.compile("["
+                           u"\U0001F600-\U0001F64F"  # Emoticons
+                           u"\U0001F300-\U0001F5FF"  # Symbols & pictographs
+                           u"\U0001F680-\U0001F6FF"  # Transport & map symbols
+                           u"\U0001F1E0-\U0001F1FF"  # Flags (iOS)
+                           u"\U00002700-\U000027BF"  # Dingbats
+                           u"\U000024C2-\U0001F251"  # Enclosed characters
+                           "]+", flags=re.UNICODE)
+    
+    # Find all emojis in the text
+    emojis = emoji_pattern.findall(text)
+    
+    # Join emojis list if any, else return empty string
+    return ' '.join(emojis) if emojis else ''
+
+# Apply the emoji detection function
+cm['emojis'] = cm['CONTENT'].apply(find_emojis)
+
+# Display the first few rows to check results
+cm[['CONTENT', 'cleaned_text', 'typos', 'emojis']].head()
+
+```
+
+```{python}
+# Select specified columns to create the new dataframe
+clean = cm[['CLASS', 'CONTENT', 'cleaned_text', 'typos', 'emojis']]
+```
+
+```{python}
+from collections import Counter
+
+# Filter rows for each class
+class_0_words = ' '.join(clean[clean['CLASS'] == 0]['cleaned_text']).split()
+class_1_words = ' '.join(clean[clean['CLASS'] == 1]['cleaned_text']).split()
+
+# Count word occurrences in each class
+class_0_word_counts = Counter(class_0_words)
+class_1_word_counts = Counter(class_1_words)
+
+# Display the most common words in each class
+print("Most common words in class 0:")
+print(class_0_word_counts.most_common(10))  # Adjust the number to see more or fewer words
+
+print("\nMost common words in class 1:")
+print(class_1_word_counts.most_common(10))
+
+# Find the most frequent words in each class that do not appear in the other class
+class_0_only_words = {word: count for word, count in class_0_word_counts.items() if word not in class_1_word_counts}
+class_1_only_words = {word: count for word, count in class_1_word_counts.items() if word not in class_0_word_counts}
+
+# Get the top 10 unique words in each class
+class_0_unique_top_10 = Counter(class_0_only_words).most_common(10)
+class_1_unique_top_10 = Counter(class_1_only_words).most_common(10)
+
+# Display the most frequent words unique to each class
+print("\nMost frequent words in class 0 that do not appear in class 1:")
+print(class_0_unique_top_10)
+
+print("\nMost frequent words in class 1 that do not appear in class 0:")
+print(class_1_unique_top_10)
+
+```
+
+```{python}
+# Visualization of word frequency overlap
+import matplotlib.pyplot as plt
+from matplotlib_venn import venn2
+
+# Create a set of the top N words in each class (N = 20 for example)
+top_n = 20
+class_0_top_words = {word for word, _ in class_0_word_counts.most_common(top_n)}
+class_1_top_words = {word for word, _ in class_1_word_counts.most_common(top_n)}
+
+# Find the overlapping and unique words
+overlapping_words = class_0_top_words & class_1_top_words
+class_0_unique_words = class_0_top_words - class_1_top_words
+class_1_unique_words = class_1_top_words - class_0_top_words
+
+# Plot the Venn diagram of word overlap
+from matplotlib_venn import venn2
+
+overlap_fig, ax = plt.subplots()
+venn = venn2(subsets=(len(class_0_unique_words), len(class_1_unique_words), len(overlapping_words)), 
+             set_labels=('Class 0', 'Class 1'))
+venn.get_label_by_id('10').set_text('\n'.join(list(class_0_unique_words)))
+venn.get_label_by_id('01').set_text('\n'.join(list(class_1_unique_words)))
+venn.get_label_by_id('11').set_text('\n'.join(list(overlapping_words)))
+plt.title("Word Overlap between Class 0 and Class 1 Comments")
+plt.show()
+
+plt.savefig('figure8.png')
+```
+
+```{python}
+# Analyze typo frequency in each class
+class_0_typos = clean[clean['CLASS'] == 0]['typos'].str.split().map(len).sum()
+class_1_typos = clean[clean['CLASS'] == 1]['typos'].str.split().map(len).sum()
+
+# Calculate total words in each class
+total_class_0_words = clean[clean['CLASS'] == 0]['CONTENT'].str.split().map(len).sum()
+total_class_1_words = clean[clean['CLASS'] == 1]['CONTENT'].str.split().map(len).sum()
+
+# Calculate typo frequency as a percentage of total words
+class_0_typo_freq = (class_0_typos / total_class_0_words) * 100
+class_1_typo_freq = (class_1_typos / total_class_1_words) * 100
+
+print(f"Typo frequency in Class 0: {class_0_typo_freq:.2f}%")
+print(f"Typo frequency in Class 1: {class_1_typo_freq:.2f}%")
+```
+
+```{python}
+# Create a table showing the top 10 typos in each class and their counts
+def get_top_typos(class_typos):
+    all_typos = ', '.join(class_typos).split(', ')
+    typo_counts = Counter(all_typos)
+    return typo_counts.most_common(10)
+
+class_0_top_typos = get_top_typos(clean[clean['CLASS'] == 0]['typos'])
+class_1_top_typos = get_top_typos(clean[clean['CLASS'] == 1]['typos'])
+
+# Create a DataFrame to display the top typos in each class
+top_typos_df = pd.DataFrame({
+    'Class 0 Typos': [typo for typo, _ in class_0_top_typos],
+    'Class 0 Counts': [count for _, count in class_0_top_typos],
+    'Class 1 Typos': [typo for typo, _ in class_1_top_typos],
+    'Class 1 Counts': [count for _, count in class_1_top_typos]
+})
+
+print(top_typos_df)
+```
+
+```{python}
+# Create a table showing the top 10 emojis in each class and their counts
+def get_top_emojis(class_emojis):
+    all_emojis = ' '.join(class_emojis).split()
+    emoji_counts = Counter(all_emojis)
+    return emoji_counts.most_common(10)
+
+class_0_top_emojis = get_top_emojis(clean[clean['CLASS'] == 0]['emojis'])
+class_1_top_emojis = get_top_emojis(clean[clean['CLASS'] == 1]['emojis'])
+
+# Create a DataFrame to display the top emojis in each class
+top_emojis_df = pd.DataFrame({
+    'Class 0 Emojis': [emoji for emoji, _ in class_0_top_emojis],
+    'Class 0 Counts': [count for _, count in class_0_top_emojis],
+    'Class 1 Emojis': [emoji for emoji, _ in class_1_top_emojis],
+    'Class 1 Counts': [count for _, count in class_1_top_emojis]
+})
+
+print(top_emojis_df)
+```
+
+```{python}
+# Analyze the frequency of 'www' in each class
+class_0_www_count = clean[clean['CLASS'] == 0]['CONTENT'].str.contains('www').sum()
+class_1_www_count = clean[clean['CLASS'] == 1]['CONTENT'].str.contains('www').sum()
+
+print(f"Number of comments containing 'www' in Class 0: {class_0_www_count}")
+print(f"Number of comments containing 'www' in Class 1: {class_1_www_count}")
+```
+
+```{python}
+# Analyze the frequency of 'https' in each class
+class_0_https_count = clean[clean['CLASS'] == 0]['CONTENT'].str.contains('https').sum()
+class_1_https_count = clean[clean['CLASS'] == 1]['CONTENT'].str.contains('https').sum()
+
+print(f"Number of comments containing 'https' in Class 0: {class_0_https_count}")
+print(f"Number of comments containing 'https' in Class 1: {class_1_https_count}")
+```
+
+
+
+
+
+
+

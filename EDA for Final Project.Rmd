@@ -1,0 +1,381 @@
+---
+title: "STA314 EDA"
+author: "Domenico Oppedisano"
+date: "2024-10-28"
+output: html_document
+---
+
+
+```{python}
+import numpy as np
+import pandas as pd
+```
+
+```{python}
+comm = pd.read_csv('train.csv')
+```
+
+```{python}
+comm.tail(4)
+```
+```{python}
+comm.shape
+```
+
+Data Cleaning Section, simplifying the Data Frame.
+
+```{python}
+comm.info()
+```
+```{python}
+com = comm.drop(columns = ['Unnamed: 0', 'COMMENT_ID'])
+```
+```{python}
+com.shape
+com.isna().sum()
+com.duplicated().sum()
+```
+```{python}
+#Funny loophole that we can maybe use??
+
+# Check for missing values in the DATE column for each class
+missing_dates_by_class = com.groupby('CLASS')['DATE'].apply(lambda x: x.isna().sum())
+
+# Display the result
+print(missing_dates_by_class)
+
+```
+
+
+
+Data Visualization
+
+
+```{python}
+com['CLASS'].value_counts()
+```
+
+```{python}
+!pip install matplotlib
+```
+
+```{python}
+#pie chart
+!pip install matplotlib
+!pip install --upgrade pip
+
+import matplotlib.pyplot as plt
+```
+
+```{python}
+plt.clf()
+
+# Calculate counts for each class
+spam_count = com[com['CLASS'] == 1].shape[0]
+not_spam_count = com[com['CLASS'] == 0].shape[0]
+
+# Plot with correct labels
+plt.pie([not_spam_count, spam_count], labels=['Not Spam', 'Spam'], autopct="%0.2f")
+plt.savefig('figure1.png')
+plt.show()
+
+```
+
+```{python}
+
+!pip install nltk
+import nltk
+
+nltk.download('punkt')
+```
+
+```{python}
+#Creating a character length column
+
+com['num_characters'] = com['CONTENT'].apply(len)
+com.rename(columns = {'num_characters':'Character Count'}, inplace = True)
+```
+
+```{python}
+com.head(3)
+```
+
+```{python}
+import ast
+```
+
+
+```{python}
+com['TOKENIZED'] = com['TOKENIZED'].apply(ast.literal_eval)
+com['Word Count'] = com['TOKENIZED'].apply(len)
+```
+
+```{python}
+com.head(4)
+```
+
+```{python}
+ana = com[['CLASS', 'CONTENT', 'Character Count', 'Word Count']]
+```
+
+```{python}
+ana.describe()
+```
+
+```{python}
+ana[ana['CLASS'] == 0][['Character Count', 'Word Count']].describe()
+ana[ana['CLASS'] == 1][['Character Count', 'Word Count']].describe()
+```
+
+```{python}
+!pip install seaborn
+import seaborn as sns
+```
+
+```{python}
+#Making a histogram to compare the Character Count of spam vs ham
+plt.figure(figsize=(8, 6))
+
+# Set a fixed bin width (e.g., 10)
+bin_width = 10
+
+sns.histplot(ana[ana['CLASS'] == 0]['Character Count'], color='yellow', label='Class 0', binwidth=bin_width)
+sns.histplot(ana[ana['CLASS'] == 1]['Character Count'], color='orange', label='Class 1', binwidth=bin_width)
+
+plt.xlabel('Character Count')
+plt.ylabel('Count')
+plt.legend()
+plt.savefig('figure2.png')
+plt.show()
+
+
+
+#Restricting x-axis to show more detail in areas of higher volume
+
+#Making a histogram to compare the Character Count of spam vs ham
+plt.figure(figsize=(8, 6))
+
+# Set a fixed bin width (e.g., 10)
+bin_width = 5
+
+sns.histplot(ana[ana['CLASS'] == 0]['Character Count'], color='yellow', label='Class 0', binwidth=bin_width)
+sns.histplot(ana[ana['CLASS'] == 1]['Character Count'], color='orange', label='Class 1', binwidth=bin_width)
+
+
+plt.xlim(0, 600)
+plt.xlabel('Character Count')
+plt.ylabel('Count')
+plt.legend()
+plt.savefig('figure3.png')
+plt.show()
+
+```
+
+```{python}
+#Making a histogram to compare the Word Count of spam vs ham
+plt.figure(figsize=(8, 6))
+
+# Set a fixed bin width (e.g., 10)
+bin_width = 10
+
+sns.histplot(ana[ana['CLASS'] == 0]['Word Count'], color='yellow', label='Class 0', binwidth=bin_width)
+sns.histplot(ana[ana['CLASS'] == 1]['Word Count'], color='orange', label='Class 1', binwidth=bin_width)
+
+plt.xlabel('Word Count')
+plt.ylabel('Count')
+plt.legend()
+plt.savefig('figure4.png')
+plt.show()
+
+
+
+
+#Restricting x-axis for same plot to show more detail on the part with most volume
+plt.figure(figsize=(8, 6))
+
+# Set a fixed bin width (e.g., 10)
+bin_width = 2
+
+sns.histplot(ana[ana['CLASS'] == 0]['Word Count'], color='yellow', label='Class 0', binwidth=bin_width)
+sns.histplot(ana[ana['CLASS'] == 1]['Word Count'], color='orange', label='Class 1', binwidth=bin_width)
+
+# Set x-axis limit to focus on the relevant range
+plt.xlim(0, 100)  
+plt.xlabel('Word Count')
+plt.ylabel('Count')
+plt.legend()
+plt.savefig('figure5.png')
+plt.show()
+
+```
+
+```{python}
+sns.pairplot(ana,hue='CLASS')
+plt.savefig('figure6.png')
+plt.show()
+```
+
+```{python}
+#Creating a data frame with only numerical values of comments
+
+selected = ['CLASS', 'Character Count', 'Word Count']
+num_ana = ana[selected]
+```
+
+```{python}
+#Heat map plot of Character and Word Counts
+plt.figure(figsize=(8, 6))
+
+sns.heatmap(num_ana.corr(), annot=True)
+plt.savefig('figure7.png')
+plt.show()
+```
+
+Text Preprocessing Section
+
+```{python}
+nltk.download('stopwords')
+```
+
+```{python}
+from nltk.corpus import stopwords
+stopwords.words('english')
+```
+
+```{python}
+import string
+string.punctuation
+```
+
+```{python}
+from nltk.stem.porter import PorterStemmer
+ps = PorterStemmer()
+
+#testing to see if stemming works
+ps.stem('singing')
+```
+
+
+```{python}
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+import string
+
+ps = PorterStemmer()
+
+def transform_text(text):
+    # 1. Lowercase conversion
+    text = text.lower()
+    
+    # 2. Tokenization
+    text = nltk.word_tokenize(text)
+    
+    # 3. Removing special characters
+    text = [i for i in text if i.isalnum()]
+    
+    # 4. Removing stop words and punctuation
+    text = [i for i in text if i not in stopwords.words('english') and i not in string.punctuation]
+    
+    # 5. Stemming
+    text = [ps.stem(i) for i in text]
+    
+    # Join the final list into a string and return
+    return " ".join(text)
+
+# Test the function
+print(transform_text("Okay name ur price as long as its legal! Wen can I pick them up? Y u ave x ams xx"))
+
+```
+
+
+```{python}
+print(ana.loc[20, 'CONTENT'])
+check = transform_text(ana.loc[20, 'CONTENT'])
+print(check)
+```
+
+```{python}
+# Step 1: Make a copy of ana
+ana_copy = ana.copy()
+
+# Step 2: Transform the 'CONTENT' column in the copy
+ana_copy['CONTENT'].apply(transform_text)
+```
+
+```{python}
+ana.loc[:, 'Transformed'] = ana_copy['CONTENT']
+```
+
+```{python}
+!pip install wordcloud
+```
+
+```{python}
+from wordcloud import WordCloud
+wc = WordCloud(width=1500, height = 800, min_font_size=10, background_color = 'white')
+```
+
+```{python}
+# Ham word cloud
+ham_wc = wc.generate(ana[ana['CLASS'] == 0]['Transformed'].str.cat(sep=" "))
+plt.figure(figsize=(10, 5))
+plt.imshow(ham_wc, interpolation="bilinear")
+plt.axis("off")
+plt.title("Ham Word Cloud")
+plt.show()
+
+# Spam word cloud
+spam_wc = wc.generate(ana[ana['CLASS'] == 1]['Transformed'].str.cat(sep=" "))
+plt.figure(figsize=(10, 5))
+plt.imshow(spam_wc, interpolation="bilinear")
+plt.axis("off")
+plt.title("Spam Word Cloud")
+plt.show()
+```
+
+```{python}
+spam_word = []
+for msg in ana[ana['CLASS']==1]['Transformed'].tolist():
+  for word in msg.split():
+    spam_word.append(word)
+```
+
+```{python}
+len(spam_word)
+```
+
+```{python}
+from collections import Counter
+
+# Join all transformed spam text into a single string
+spam_text = ana[ana['CLASS'] == 1]['Transformed'].str.cat(sep=" ")
+
+# Use Counter directly on the split words from spam_text
+spam_word_counts = Counter(spam_text.split())
+
+# Display the most common words
+print(spam_word_counts.most_common(20))
+
+```
+
+```{python}
+pd.DataFrame(Counter(spam_word).most_common(30))
+```
+
+
+```{python}
+# Check if stop words are being removed
+sample_text = "This is a test to check if stop words like and are removed correctly."
+print("Before transformation:", sample_text)
+print("After transformation:", transform_text(sample_text))
+
+```
+
+
+
+
+
+
+
+
