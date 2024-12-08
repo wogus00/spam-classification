@@ -1004,7 +1004,6 @@ Most frequent words in class 1 that do not appear in class 0:
     \PY{c+c1}{\PYZsh{} Tokenize text and tag with parts of speech}
     \PY{n}{words} \PY{o}{=} \PY{n}{nltk}\PY{o}{.}\PY{n}{word\PYZus{}tokenize}\PY{p}{(}\PY{n}{text}\PY{p}{)}
     \PY{n}{pos\PYZus{}tags} \PY{o}{=} \PY{n}{nltk}\PY{o}{.}\PY{n}{pos\PYZus{}tag}\PY{p}{(}\PY{n}{words}\PY{p}{)}
-    \PY{c+c1}{\PYZsh{} Only check words that aren\PYZsq{}t proper nouns (NNP or NNPS) or numbers}
     \PY{n}{typos} \PY{o}{=} \PY{p}{[}
         \PY{n}{word} \PY{k}{for} \PY{n}{word}\PY{p}{,} \PY{n}{pos} \PY{o+ow}{in} \PY{n}{pos\PYZus{}tags} 
         \PY{k}{if} \PY{n}{word}\PY{o}{.}\PY{n}{lower}\PY{p}{(}\PY{p}{)} \PY{o+ow}{not} \PY{o+ow}{in} \PY{n}{spell} 
@@ -1731,9 +1730,9 @@ False Positive Rate (FPR): 0.011235955056179775
 \end{tcolorbox}
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{41}{\boxspacing}
+\prompt{In}{incolor}{50}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{sample\PYZus{}str} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{subscr!be to my chanel}\PY{l+s+s2}{\PYZdq{}}
+\PY{n}{sample\PYZus{}str} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{this money song is good www}\PY{l+s+s2}{\PYZdq{}}
 \PY{n}{sample\PYZus{}cleaned} \PY{o}{=} \PY{n}{clean\PYZus{}text}\PY{p}{(}\PY{n}{sample\PYZus{}str}\PY{p}{)}
 \PY{n}{sample\PYZus{}vectorized} \PY{o}{=} \PY{n}{tf\PYZus{}vectorizer}\PY{o}{.}\PY{n}{transform}\PY{p}{(}\PY{p}{[}\PY{n}{sample\PYZus{}cleaned}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{toarray}\PY{p}{(}\PY{p}{)}
 \PY{n}{sample\PYZus{}date} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{reshape}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
@@ -1744,21 +1743,21 @@ False Positive Rate (FPR): 0.011235955056179775
 \end{tcolorbox}
 
             \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
-\prompt{Out}{outcolor}{41}{\boxspacing}
+\prompt{Out}{outcolor}{50}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-array([0])
+array([1])
 \end{Verbatim}
 \end{tcolorbox}
         
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{42}{\boxspacing}
+\prompt{In}{incolor}{51}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{best\PYZus{}params\PYZus{}final} \PY{o}{=} \PY{n}{best\PYZus{}model\PYZus{}rf}\PY{o}{.}\PY{n}{get\PYZus{}params}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{43}{\boxspacing}
+\prompt{In}{incolor}{52}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{rf} \PY{o}{=} \PY{n}{RandomForestClassifier}\PY{p}{(}\PY{o}{*}\PY{o}{*}\PY{n}{best\PYZus{}params\PYZus{}final}\PY{p}{)}
 \PY{n}{rf}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{)}
@@ -1766,21 +1765,21 @@ array([0])
 \end{tcolorbox}
 
             \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
-\prompt{Out}{outcolor}{43}{\boxspacing}
+\prompt{Out}{outcolor}{52}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 RandomForestClassifier(max\_depth=100, min\_samples\_split=7, random\_state=42)
 \end{Verbatim}
 \end{tcolorbox}
         
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{44}{\boxspacing}
+\prompt{In}{incolor}{53}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{y\PYZus{}pred} \PY{o}{=} \PY{n}{rf}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{x\PYZus{}test}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{45}{\boxspacing}
+\prompt{In}{incolor}{54}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{sol} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{./sample\PYZus{}submission.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
 \PY{n}{sol}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{CLASS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{y\PYZus{}pred}
